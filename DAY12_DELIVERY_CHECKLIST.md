@@ -1,8 +1,8 @@
 #  Delivery Checklist — Day 12 Lab Submission
 
-> **Student Name:** _________________________  
-> **Student ID:** _________________________  
-> **Date:** _________________________
+> **Student Name:** Nguyễn Anh Hào   
+> **Student ID:** 2A202600131
+> **Date:** 17/04/2026
 
 ---
 
@@ -20,27 +20,36 @@ Create a file `MISSION_ANSWERS.md` with your answers to all exercises:
 ## Part 1: Localhost vs Production
 
 ### Exercise 1.1: Anti-patterns found
-1. [Your answer]
-2. [Your answer]
-...
+1. **Hardcoded Secrets**: API Key và link Database nằm trực tiếp trong code, gây rủi ro bảo mật nghiêm trọng.
+2. **Thiếu Config Management**: Các cài đặt như DEBUG, MAX_TOKENS bị gán cứng, không linh hoạt giữa các môi trường.
+3. **Logging không chuyên nghiệp**: Dùng `print()` thay vì logging library, gây khó khăn khi quản lý log trên server.
+4. **Không có Health Check**: Hệ thống không biết khi nào app bị treo để tự động khởi động lại.
+5. **Fix cứng Host/Port**: Lắng nghe tại `localhost:8000` thay vì đọc từ biến môi trường `PORT`, dẫn đến fail khi chạy trên Container/Cloud.
 
-### Exercise 1.3: Comparison table
-| Feature | Develop | Production | Why Important? |
-|---------|---------|------------|----------------|
-| Config  | ...     | ...        | ...            |
-...
+| Feature | Develop (Basic) | Production (Advanced) | Tại sao quan trọng? |
+| :--- | :--- | :--- | :--- |
+| **Config** | Hardcode trong code | Biến môi trường (.env) | Bảo mật và dễ dàng thay đổi cấu hình mà không cần sửa code. |
+| **Health check** | Không có | Có `/health` & `/ready` | Giúp Cloud Platform giám sát trạng thái và tự động phục hồi app. |
+| **Logging** | `print()` | Structured JSON Log | Máy có thể đọc và phân tích log tự động trên quy mô lớn. |
+| **Shutdown** | Đột ngột | Graceful (SIGTERM) | Đảm bảo các request dở dang được hoàn thành trước khi tắt app. |
+| **Binding** | `localhost` | `0.0.0.0` | Để container có thể nhận kết nối từ mạng bên ngoài. |
 
 ## Part 2: Docker
 
 ### Exercise 2.1: Dockerfile questions
-1. Base image: [Your answer]
-2. Working directory: [Your answer]
-...
+1. **Base image**: `python:3.11` (Bản đầy đủ).
+2. **Working directory**: `/app`.
+3. **Tại sao COPY requirements.txt trước?**: Để tận dụng Layer Cache. Docker sẽ không chạy lại `pip install` nếu file này không đổi, giúp build cực nhanh.
+4. **CMD vs ENTRYPOINT**: `CMD` cung cấp lệnh mặc định và dễ bị ghi đè, trong khi `ENTRYPOINT` quy định mục đích chính của container và khó ghi đè hơn.
 
 ### Exercise 2.3: Image size comparison
-- Develop: [X] MB
-- Production: [Y] MB
-- Difference: [Z]%
+- **Develop**: ~1.66 GB
+- **Production**: ~236 MB
+- **Chênh lệch**: Giảm ~86% nhờ kỹ thuật Multi-stage build và base image slim.
+
+### Exercise 2.4: Docker Compose stack
+- **Kiến trúc**: Nginx (Load Balancer) đứng trước Agent.
+- **Luồng dữ liệu**: Client -> Nginx (Port 80) -> Agent (Port 8000). Nginx đóng vai trò Reverse Proxy, giúp ẩn port thực của Agent và có thể chia tải sau này.
 
 ## Part 3: Cloud Deployment
 
