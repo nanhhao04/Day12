@@ -42,8 +42,11 @@ Submit a **GitHub repository** chứa toàn bộ các nội dung sau:
 
 #### Part 3: Cloud Deployment
 **Exercise 3.1: Railway deployment**
-- **URL**: [Link của tôi](https://day-12-production-7aaa.up.railway.app)
-- **Screenshot**: `asset/railway.png`
+- **Platform**: Railway
+- **Public URL**: [https://day-12-production-7aaa.up.railway.app](https://day-12-production-7aaa.up.railway.app)
+- **Screenshot**: 
+
+  ![Railway Deployment](asset/railway.png)
 
 #### Part 4: API Security
 **Exercise 4.1-4.3: Test results**
@@ -148,17 +151,20 @@ Toàn bộ mã nguồn đã được chuẩn hóa trong thư mục `06-lab-compl
 ### 3. Service Deployment Information
 
 **Infrastructure:**
-- **URL**: `https://nguyen-anh-hao-agent.up.railway.app`
+- **URL**: [https://day-12-production-7aaa.up.railway.app](https://day-12-production-7aaa.up.railway.app)
 - **Stack**: FastAPI + Redis + Docker + Railway
 
 **Test Commands:**
 ```bash
 # 1. Health Check
-curl https://nguyen-anh-hao-agent.up.railway.app/health
+curl https://day-12-production-7aaa.up.railway.app/health
 
-# 2. Agent Ask Test (Auth Required)
+# 2. Readiness Check
+curl https://day-12-production-7aaa.up.railway.app/ready
+
+# 3. Agent Ask Test (Auth Required)
 curl -H "X-API-Key: day12-lab6-secret-key" -H "Content-Type: application/json" \
-  -X POST https://nguyen-anh-hao-agent.up.railway.app/ask \
+  -X POST https://day-12-production-7aaa.up.railway.app/ask \
   -d '{"question": "MacBook Air M1 gia bao nhieu?"}'
 ```
 
@@ -181,9 +187,20 @@ curl -H "X-API-Key: day12-lab6-secret-key" -H "Content-Type: application/json" \
 ##  Screenshots
 Minh chứng vận hành hệ thống:
 
-1. **Dashboard Triển khai**: ![Deployment dashboard](screenshots/dashboard.png)
-2. **Trạng thái Server**: ![Service running](screenshots/running.png)
-3. **Kết quả Kiểm thử**: ![Test results](screenshots/test.png)
+### 1. Dashboard Triển khai
+*Railway project dashboard — cả hai service (agent + Redis) đều Online.*
+
+![Deployment dashboard](screenshots/dashboard.png)
+
+### 2. Trạng thái Server
+*Health check endpoint trả về `{"status": "ok"}` — Service đang live.*
+
+![Service health check](screenshots/health.png)
+
+### 3. Kết quả Kiểm thử
+*Agent trả lời câu hỏi về giá MacBook Air M1 qua `/ask` endpoint.*
+
+![Test results](screenshots/test.png)
 
 ---
 
