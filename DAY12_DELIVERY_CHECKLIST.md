@@ -8,220 +8,184 @@
 
 ##  Submission Requirements
 
-Submit a **GitHub repository** containing:
+Submit a **GitHub repository** chứa toàn bộ các nội dung sau:
 
-### 1. Mission Answers (40 points)
+### 1. Mission Answers (Part 1 - Part 6)
 
-Create a file `MISSION_ANSWERS.md` with your answers to all exercises:
+#### Part 1: Localhost vs Production
+**Exercise 1.1: Anti-patterns found**
+1. **API key hardcode**: API Key nằm trực tiếp trong code, dễ bị lộ.
+2. **Port cố định**: Gán cứng port khiến việc deploy lên các platform (Railway, Render) gặp khó khăn khi họ inject port động.
+3. **Debug mode**: Chạy mode debug trong production gây rủi ro bảo mật và giảm hiệu năng.
+4. **Không có health check**: Khiến orchestrator không biết service còn sống hay đã chết để restart.
+5. **Không xử lý shutdown**: Làm mất dữ liệu hoặc lỗi luồng khi container bị tắt đột ngột (abrupt shutdown).
 
-```markdown
-# Day 12 Lab - Mission Answers
+**Exercise 1.3: Comparison table**
+| Feature | Develop | Production | Why Important? |
+|---------|---------|------------|----------------|
+| Config  | Hardcode | Env vars   | Tránh lộ thông tin (API key, password..), linh hoạt theo từng môi trường. |
+| Health check | Không có | Có       | Kiểm tra service còn sống không để tự động xử lý. |
+| Logging | `print()` | JSON      | Unify format, lưu log theo structure để tool monitor (Kibana/Loki) truy xuất. |
+| Shutdown | Đột ngột | Graceful  | Các request không bị ngắt quãng làm lost data, tránh lỗi luồng xử lý. |
 
-## Part 1: Localhost vs Production
+#### Part 2: Docker
+**Exercise 2.1: Dockerfile Analysis**
+1. **Base image**: Môi trường base cơ bản, thường là bản `slim` hoặc `alpine` để tối ưu dung lượng.
+2. **Working directory**: Là root directory của ứng dụng bên trong container.
+3. **Copy requirements.txt trước**: Để cache lại layer dependencies sau khi build lần đầu, giúp các lần build sau nhanh hơn (chỉ cài lại nếu file này thay đổi).
+4. **CMD vs ENTRYPOINT**: `CMD` có thể bị ghi đè tham số khi chạy docker run, trong khi `ENTRYPOINT` cố định lệnh và chỉ cho phép nối thêm tham số.
 
-### Exercise 1.1: Anti-patterns found
-1. **Hardcoded Secrets**: API Key và link Database nằm trực tiếp trong code, gây rủi ro bảo mật nghiêm trọng.
-2. **Thiếu Config Management**: Các cài đặt như DEBUG, MAX_TOKENS bị gán cứng, không linh hoạt giữa các môi trường.
-3. **Logging không chuyên nghiệp**: Dùng `print()` thay vì logging library, gây khó khăn khi quản lý log trên server.
-4. **Không có Health Check**: Hệ thống không biết khi nào app bị treo để tự động khởi động lại.
-5. **Fix cứng Host/Port**: Lắng nghe tại `localhost:8000` thay vì đọc từ biến môi trường `PORT`, dẫn đến fail khi chạy trên Container/Cloud.
+**Exercise 2.3: Image size comparison**
+- **Develop**: 1670 MB
+- **Production**: **262 MB**
+- **Difference [Production/Develop]**: 15.7% (Giảm ~84%)
 
-| Feature | Develop (Basic) | Production (Advanced) | Tại sao quan trọng? |
-| :--- | :--- | :--- | :--- |
-| **Config** | Hardcode trong code | Biến môi trường (.env) | Bảo mật và dễ dàng thay đổi cấu hình mà không cần sửa code. |
-| **Health check** | Không có | Có `/health` & `/ready` | Giúp Cloud Platform giám sát trạng thái và tự động phục hồi app. |
-| **Logging** | `print()` | Structured JSON Log | Máy có thể đọc và phân tích log tự động trên quy mô lớn. |
-| **Shutdown** | Đột ngột | Graceful (SIGTERM) | Đảm bảo các request dở dang được hoàn thành trước khi tắt app. |
-| **Binding** | `localhost` | `0.0.0.0` | Để container có thể nhận kết nối từ mạng bên ngoài. |
+#### Part 3: Cloud Deployment
+**Exercise 3.1: Railway deployment**
+- **URL**: [Link của tôi](https://day-12-production-7aaa.up.railway.app)
+- **Screenshot**: `asset/railway.png`
 
-## Part 2: Docker
+#### Part 4: API Security
+**Exercise 4.1-4.3: Test results**
+- **API key được check ở đâu?**: Check trong header (`X-API-Key`) với mỗi request.
+- **Điều gì xảy ra nếu sai key?**: Trả về lỗi `401 Unauthorized`.
+- **Làm sao rotate key?**: Sử dụng config token, hoặc JWT token tự sinh với secret config có expired time.
 
-### Exercise 2.1: Dockerfile questions
-1. **Base image**: `python:3.11` (Bản đầy đủ).
-2. **Working directory**: `/app`.
-3. **Tại sao COPY requirements.txt trước?**: Để tận dụng Layer Cache. Docker sẽ không chạy lại `pip install` nếu file này không đổi, giúp build cực nhanh.
-4. **CMD vs ENTRYPOINT**: `CMD` cung cấp lệnh mặc định và dễ bị ghi đè, trong khi `ENTRYPOINT` quy định mục đích chính của container và khó ghi đè hơn.
+**Exercise 4.4: Cost guard implementation**
+```python
+import redis
+from datetime import datetime
 
-### Exercise 2.3: Image size comparison
-- **Develop**: ~1.66 GB
-- **Production**: ~236 MB
-- **Chênh lệch**: Giảm ~86% nhờ kỹ thuật Multi-stage build và base image slim.
+r = redis.Redis()
 
-### Exercise 2.4: Docker Compose stack
-- **Kiến trúc**: Nginx (Load Balancer) đứng trước Agent.
-- **Luồng dữ liệu**: Client -> Nginx (Port 80) -> Agent (Port 8000). Nginx đóng vai trò Reverse Proxy, giúp ẩn port thực của Agent và có thể chia tải sau này.
-
-## Part 3: Cloud Deployment
-
-### Exercise 3.1: Railway deployment
-- URL: https://your-app.railway.app
-- Screenshot: [Link to screenshot in repo]
-
-## Part 4: API Security
-
-### Exercise 4.1-4.3: Test results
-[Paste your test outputs]
-
-### Exercise 4.4: Cost guard implementation
-[Explain your approach]
-
-## Part 5: Scaling & Reliability
-
-### Exercise 5.1-5.5: Implementation notes
-[Your explanations and test results]
+def check_budget(user_id: str, estimated_cost: float) -> bool:
+    month_key = datetime.now().strftime("%Y-%m")
+    key = f"budget:{user_id}:{month_key}"
+    
+    current = float(r.get(key) or 0)
+    if current + estimated_cost > 10:
+        return False
+    
+    r.incrbyfloat(key, estimated_cost)
+    r.expire(key, 32 * 24 * 3600)  # 32 days
+    return True
 ```
+
+#### Part 5: Scaling & Reliability
+**Implementation notes:**
+Log nhận được:
+```json
+{"ts":"2026-04-17 13:32:02,024","lvl":"INFO","msg":"{\"event\": \"ready\"}"}
+INFO:     Application startup complete.
+{"ts":"2026-04-17 13:32:02,901","lvl":"INFO","msg":"{\"event\": \"request\", \"method\": \"GET\", \"path\": \"/health\", \"status\": 200, \"ms\": 1.0}"}
+INFO:     100.64.0.2:50531 - "GET /health HTTP/1.1" 200 OK
+```
+
+Implementation code:
+```python
+@app.get("/health")
+def health():
+    """Liveness probe — container còn sống không?"""
+    uptime = round(time.time() - START_TIME, 1)
+
+    checks = {}
+    try:
+        import psutil
+        mem = psutil.virtual_memory()
+        checks["memory"] = {
+            "status": "ok" if mem.percent < 90 else "degraded",
+            "used_percent": mem.percent,
+        }
+    except ImportError:
+        checks["memory"] = {"status": "ok", "note": "psutil not installed"}
+
+    overall_status = "ok" if all(
+        v.get("status") == "ok" for v in checks.values()
+    ) else "degraded"
+
+    return {
+        "status": overall_status,
+        "uptime_seconds": uptime,
+        "version": "1.0.0",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "checks": checks,
+    }
+
+@app.get("/ready")
+def ready():
+    """Readiness probe — sẵn sàng nhận traffic không?"""
+    if not _is_ready:
+        raise HTTPException(
+            status_code=503,
+            detail="Agent not ready. Check back in a few seconds.",
+        )
+    return {
+        "ready": True,
+    }
+```
+
+#### Part 6: Final Project Implementation
+1. **Mock LLM Integration**: Sử dụng `MockProvider` thông minh cho phép test Agent nhanh chóng, Zero-cost và bảo mật.
+2. **Container Hardening**: Chạy với non-root user `agent` và cấu hình thư viện vào `/usr/local`.
 
 ---
 
 ### 2. Full Source Code - Lab 06 Complete (60 points)
 
-Your final production-ready agent with all files:
-
-```
-your-repo/
-├── app/
-│   ├── main.py              # Main application
-│   ├── config.py            # Configuration
-│   ├── auth.py              # Authentication
-│   ├── rate_limiter.py      # Rate limiting
-│   └── cost_guard.py        # Cost protection
-├── utils/
-│   └── mock_llm.py          # Mock LLM (provided)
-├── Dockerfile               # Multi-stage build
-├── docker-compose.yml       # Full stack
-├── requirements.txt         # Dependencies
-├── .env.example             # Environment template
-├── .dockerignore            # Docker ignore
-├── railway.toml             # Railway config (or render.yaml)
-└── README.md                # Setup instructions
-```
-
-**Requirements:**
--  All code runs without errors
--  Multi-stage Dockerfile (image < 500 MB)
--  API key authentication
--  Rate limiting (10 req/min)
--  Cost guard ($10/month)
--  Health + readiness checks
--  Graceful shutdown
--  Stateless design (Redis)
--  No hardcoded secrets
+Toàn bộ mã nguồn đã được chuẩn hóa trong thư mục `06-lab-complete/`.
+- [x] All code runs without errors
+- [x] Multi-stage Dockerfile (image **247 MB**)
+- [x] API key authentication (X-API-Key)
+- [x] Rate limiting (10 req/min via Redis)
+- [x] Cost guard ($10/month guard-rail)
+- [x] Health + readiness checks
+- [x] Graceful shutdown (SIGTERM handler)
+- [x] Stateless design (Redis-backed history)
+- [x] No hardcoded secrets (Pydantic settings)
 
 ---
 
-### 3. Service Domain Link
+### 3. Service Deployment Information
 
-Create a file `DEPLOYMENT.md` with your deployed service information:
+**Infrastructure:**
+- **URL**: `https://nguyen-anh-hao-agent.up.railway.app`
+- **Stack**: FastAPI + Redis + Docker + Railway
 
-```markdown
-# Deployment Information
-
-## Public URL
-https://your-agent.railway.app
-
-## Platform
-Railway / Render / Cloud Run
-
-## Test Commands
-
-### Health Check
+**Test Commands:**
 ```bash
-curl https://your-agent.railway.app/health
-# Expected: {"status": "ok"}
+# 1. Health Check
+curl https://nguyen-anh-hao-agent.up.railway.app/health
+
+# 2. Agent Ask Test (Auth Required)
+curl -H "X-API-Key: day12-lab6-secret-key" -H "Content-Type: application/json" \
+  -X POST https://nguyen-anh-hao-agent.up.railway.app/ask \
+  -d '{"question": "MacBook Air M1 gia bao nhieu?"}'
 ```
 
-### API Test (with authentication)
-```bash
-curl -X POST https://your-agent.railway.app/ask \
-  -H "X-API-Key: YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"user_id": "test", "question": "Hello"}'
-```
-
-## Environment Variables Set
-- PORT
-- REDIS_URL
-- AGENT_API_KEY
-- LOG_LEVEL
-
-## Screenshots
-- [Deployment dashboard](screenshots/dashboard.png)
-- [Service running](screenshots/running.png)
-- [Test results](screenshots/test.png)
-```
+---
 
 ##  Pre-Submission Checklist
 
-- [ ] Repository is public (or instructor has access)
-- [ ] `MISSION_ANSWERS.md` completed with all exercises
-- [ ] `DEPLOYMENT.md` has working public URL
-- [ ] All source code in `app/` directory
-- [ ] `README.md` has clear setup instructions
-- [ ] No `.env` file committed (only `.env.example`)
-- [ ] No hardcoded secrets in code
-- [ ] Public URL is accessible and working
-- [ ] Screenshots included in `screenshots/` folder
-- [ ] Repository has clear commit history
+- [x] Repository is public (or instructor has access)
+- [x] `MISSION_ANSWERS.md` content merged properly
+- [x] `DEPLOYMENT.md` content merged properly
+- [x] All source code in `app/` directory
+- [x] `README.md` has clear setup instructions
+- [x] No `.env` file committed (only `.env.example`)
+- [x] No hardcoded secrets in code
+- [x] Screenshots included in `screenshots/` folder
+- [x] Repository has clear commit history
 
 ---
 
-##  Self-Test
+##  Screenshots
+Minh chứng vận hành hệ thống:
 
-Before submitting, verify your deployment:
-
-```bash
-# 1. Health check
-curl https://your-app.railway.app/health
-
-# 2. Authentication required
-curl https://your-app.railway.app/ask
-# Should return 401
-
-# 3. With API key works
-curl -H "X-API-Key: YOUR_KEY" https://your-app.railway.app/ask \
-  -X POST -d '{"user_id":"test","question":"Hello"}'
-# Should return 200
-
-# 4. Rate limiting
-for i in {1..15}; do 
-  curl -H "X-API-Key: YOUR_KEY" https://your-app.railway.app/ask \
-    -X POST -d '{"user_id":"test","question":"test"}'; 
-done
-# Should eventually return 429
-```
+1. **Dashboard Triển khai**: ![Deployment dashboard](screenshots/dashboard.png)
+2. **Trạng thái Server**: ![Service running](screenshots/running.png)
+3. **Kết quả Kiểm thử**: ![Test results](screenshots/test.png)
 
 ---
-
-##  Submission
-
-**Submit your GitHub repository URL:**
-
-```
-https://github.com/your-username/day12-agent-deployment
-```
 
 **Deadline:** 17/4/2026
-
----
-
-##  Quick Tips
-
-1.  Test your public URL from a different device
-2.  Make sure repository is public or instructor has access
-3.  Include screenshots of working deployment
-4.  Write clear commit messages
-5.  Test all commands in DEPLOYMENT.md work
-6.  No secrets in code or commit history
-
----
-
-##  Need Help?
-
-- Check [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-- Review [CODE_LAB.md](CODE_LAB.md)
-- Ask in office hours
-- Post in discussion forum
-
----
-
-**Good luck! **
+**Status:** **READY FOR SUBMISSION**
